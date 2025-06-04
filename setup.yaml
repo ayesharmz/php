@@ -1,0 +1,53 @@
+hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600   # Avoid frequent updates
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start Docker Swarm
+      shell: docker swarm init
+      args:
+        warn: false
+      ignore_errors: yes
+
+    - name: Copy NGINX config
+      copy:
+        src: yii2.conf           # Use a relative path where this file exists on control node
+        dest: /etc/nginx/sites-available/yii2
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload NGINX
+
+    - name: Enable NGINX config
+      file:
+        src: /etc/nginx/sites-available/yii2
+        dest: /etc/nginx/sites-enabled/yii2
+        state: link
+        force: yes
+      notify:
+        - Reload NGINX
+
+  handlers:
+    - name: Reload NGINX
+      service:
+        name: nginx
+        state: restarted
