@@ -11,4 +11,4 @@
       apt:
         name: nginx
         state: present
-ubuntu@ip-172-31-95-21:~$ 
+
