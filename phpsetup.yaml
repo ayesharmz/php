@@ -1,0 +1,51 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start Docker Swarm (ignore if already part of swarm)
+      shell: docker swarm init || true
+      ignore_errors: yes
+
+    - name: Copy NGINX config
+      copy:
+        src: nginx/yii2.conf        # <-- This path is relative to where you run ansible-playbook
+        dest: /etc/nginx/sites-available/yii2
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload NGINX
+
+    - name: Enable NGINX config
+      file:
+        src: /etc/nginx/sites-available/yii2
+        dest: /etc/nginx/sites-enabled/yii2
+        state: link
+        force: yes
+      notify:
+        - Reload NGINX
+
+  handlers:
+    - name: Reload NGINX
+      service:
+        name: nginx
+        state: restarted
